@@ -16,6 +16,7 @@ typedef struct job_entry {
     pid_t          pid;           // PID after fork(); 0 before fork
     char           command[256];  // Raw command string as entered
     int            burst_time;    // User-estimated seconds (for SJF); -1 if unknown
+    int            remaining_burst; //Tracks units left
     time_t         arrival_time;  // time() when job was submitted
     time_t         start_time;    // time() when job first got CPU; 0 if not started
     time_t         finish_time;   // time() when job completed; 0 if not finished

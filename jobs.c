@@ -29,6 +29,7 @@ job_entry_t *add_job(pid_t pid, const char *command, int burst_time) {
     strncpy(new_job->command, command, sizeof(new_job->command) - 1);
     new_job->command[sizeof(new_job->command) - 1] = '\0';
     new_job->burst_time = burst_time;
+    new_job->remaining_burst = burst_time; //Copy to remaining_burst at start
     new_job->arrival_time = time(NULL);
     new_job->start_time = 0;
     new_job->finish_time = 0;

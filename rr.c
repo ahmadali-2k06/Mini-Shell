@@ -72,12 +72,20 @@ int schedule_rr(job_queue_t *queue, int quantum, schedule_result_t *result) {
                 // Wait for quantum
                 sleep(quantum);
                 
-                // Check if it finished during quantum
+                // UPDATE: Decrement simulated burst time
+                curr->remaining_burst -= quantum;
+
                 int status;
+                // Check if the actual process died AND if our simulated time is up
                 pid_t res = waitpid(curr->pid, &status, WNOHANG | WUNTRACED);
-                
-                if (res == curr->pid && (WIFEXITED(status) || WIFSIGNALED(status))) {
-                    // It finished
+                int process_died = (res == curr->pid && (WIFEXITED(status) || WIFSIGNALED(status)));
+
+                if (process_died || curr->remaining_burst <= 0) {
+                    // It finished (either naturally or it's out of simulated time)
+                    if (!process_died) {
+                        kill(curr->pid, SIGTERM); // Kill if simulated time is up but process lives
+                    }
+                    
                     curr->finish_time = time(NULL);
                     curr->state = JOB_FINISHED;
                     update_job_state(curr->pid, JOB_FINISHED);
@@ -89,12 +97,8 @@ int schedule_rr(job_queue_t *queue, int quantum, schedule_result_t *result) {
                             break;
                         }
                     }
-                    
-                    // The job finished within quantum
-                    // Realistically, elapsed time is less than quantum, but we'll approximate with quantum for Gantt
-                    current_time_offset += quantum; 
                 } else {
-                    // It's still running, pause it
+                    // It still has burst time left, pause it
                     kill(curr->pid, SIGSTOP);
                     
                     // Wait for it to stop

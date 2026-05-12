@@ -4,6 +4,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <time.h>
+#include <stdlib.h>
 
 int schedule_fcfs(job_queue_t *queue, schedule_result_t *result) {
     if (!queue || !result) return -1;
