@@ -13,7 +13,7 @@ job_entry_t *find_shortest_job(job_queue_t *queue) {
     job_entry_t *curr = queue->head;
 
     while (curr) {
-        if (curr->state == JOB_READY && curr->pid == 0) {
+        if (curr->state == JOB_READY) {
             if (!shortest) {
                 shortest = curr;
             } else if (curr->burst_time < shortest->burst_time) {
@@ -40,6 +40,7 @@ int schedule_sjf(job_queue_t *queue, schedule_result_t *result) {
     
     int current_time_offset = 0;
     int p_index = 1;
+    time_t schedule_start = time(NULL); 
 
     // We need to map actual jobs to P1, P2 based on submission order to match Gantt labels
     // First, let's assign P_indexes sequentially by scanning queue
@@ -54,9 +55,9 @@ int schedule_sjf(job_queue_t *queue, schedule_result_t *result) {
         jobs_snapshot[snap_count] = *curr;
         
         // Dispatch
-        update_job_state(0, JOB_RUNNING);
+        update_job_state(curr->job_id, JOB_RUNNING);
         curr->state = JOB_RUNNING;
-        curr->start_time = time(NULL);
+        curr->start_time = schedule_start + current_time_offset;
         
         pid_t pid = fork_and_exec_job(curr, 0);
         
@@ -73,14 +74,14 @@ int schedule_sjf(job_queue_t *queue, schedule_result_t *result) {
                 sprintf(ge->label, "P%d", curr->job_id); // Label by Job ID
                 ge->start = current_time_offset;
                 
-                int elapsed = (int)(curr->finish_time - curr->start_time);
-                if (elapsed == 0) elapsed = 1;
+                int elapsed = curr->burst_time; // Use the simulated time!
                 current_time_offset += elapsed;
                 ge->end = current_time_offset;
             }
             
             jobs_snapshot[snap_count].start_time = curr->start_time;
             jobs_snapshot[snap_count].finish_time = curr->finish_time;
+            jobs_snapshot[snap_count].arrival_time = schedule_start;
             jobs_snapshot[snap_count].state = JOB_FINISHED;
         }
         
